@@ -1,0 +1,19 @@
+name: DE_plugin
+version: '1.0-SNAPSHOT'
+main: cjs.DE_plugin.DE_plugin
+api-version: '1.20'
+author: CJS
+description: Dragon Egg Plugin
+commands:
+  de:
+    description: DE Plugin의 모든 명령어를 관리합니다.
+    usage: /<command>
+    aliases: [DE]
+    permission: de.admin
+permissions:
+  de.admin:
+    description: DE Plugin의 모든 관리자 명령어를 사용합니다.
+    default: op
+  de.admin.chat.bypass:
+    description: 채팅 금지 기능을 우회합니다.
+    default: op

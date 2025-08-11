@@ -43,6 +43,7 @@ public class WorldBorderManager {
             double z = borderDataConfig.getDouble("overworld-center-z", 0.5);
             this.overworldCenter = new Location(overworld, x, 0, z);
         } else {
+            // 'world' 월드를 찾을 수 없을 경우의 대체 처리
             this.overworldCenter = new Location(Bukkit.getWorlds().get(0), 0.5, 0, 0.5);
         }
     }
@@ -73,12 +74,28 @@ public class WorldBorderManager {
             return;
         }
 
-        // Set the center, ensuring it's in the correct world context
+        // 1. 메모리에 새로운 중앙 위치를 설정합니다.
         this.overworldCenter = new Location(overworld, newCenter.getX(), 0, newCenter.getZ());
-        requester.sendMessage("§a새로운 보더 중앙점을 (" + (int)this.overworldCenter.getX() + ", " + (int)this.overworldCenter.getZ() + ")(으)로 설정했습니다.");
+
+        // 2. 새로운 중앙 좌표를 파일에 저장합니다.
         saveBorderData();
+
+        // 3. 모든 월드에 변경된 보더 설정을 적용합니다.
         applyAllWorldBorders();
-        requester.sendMessage("§a월드 보더 설정을 적용했습니다.");
+
+        // 4. 사용자에게 상세한 피드백을 제공합니다.
+        requester.sendMessage("§a월드 보더 중앙을 성공적으로 설정하고 적용했습니다.");
+        requester.sendMessage(String.format("§7- 오버월드 중앙: X: %.1f, Z: %.1f", this.overworldCenter.getX(), this.overworldCenter.getZ()));
+
+        World netherWorld = Bukkit.getWorld(overworld.getName() + "_nether");
+        if (netherWorld != null) {
+            double netherScale = sm.getDouble(SettingsManager.WORLDBORDER_NETHER_SCALE);
+            if (netherScale > 0) {
+                double netherX = this.overworldCenter.getX() / netherScale;
+                double netherZ = this.overworldCenter.getZ() / netherScale;
+                requester.sendMessage(String.format("§7- 지옥 중앙 (배율 %.1f 적용): X: %.1f, Z: %.1f", netherScale, netherX, netherZ));
+            }
+        }
     }
 
     public void applyAllWorldBorders() {
@@ -88,10 +105,10 @@ public class WorldBorderManager {
             WorldBorder border = overworld.getWorldBorder();
             border.setCenter(this.overworldCenter);
             border.setSize(sm.getInt(SettingsManager.WORLDBORDER_OVERWORLD_SIZE));
-            border.setDamageAmount(1.0); // Standard damage
-            border.setDamageBuffer(5.0); // Standard buffer
-            border.setWarningDistance(16); // Standard warning
-            border.setWarningTime(15); // Standard warning
+            border.setDamageAmount(1.0);
+            border.setDamageBuffer(5.0);
+            border.setWarningDistance(16);
+            border.setWarningTime(15);
         }
 
         // 네더 보더 설정
@@ -99,7 +116,7 @@ public class WorldBorderManager {
         if (nether != null) {
             WorldBorder border = nether.getWorldBorder();
             double scale = sm.getDouble(SettingsManager.WORLDBORDER_NETHER_SCALE);
-            if (scale <= 0) scale = 8.0; // Default/fallback scale
+            if (scale <= 0) scale = 8.0; // 기본값/대체 배율
             double overworldSize = sm.getInt(SettingsManager.WORLDBORDER_OVERWORLD_SIZE);
 
             border.setCenter(overworldCenter.getX() / scale, overworldCenter.getZ() / scale);
@@ -118,6 +135,7 @@ public class WorldBorderManager {
                 border.setCenter(0, 0);
                 border.setSize(sm.getInt(SettingsManager.WORLDBORDER_OVERWORLD_SIZE));
             } else {
+                // 비활성화 시, 사실상 보더가 없는 것과 같도록 매우 크게 설정
                 border.setSize(60000000);
             }
         }

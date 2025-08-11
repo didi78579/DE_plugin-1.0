@@ -2,10 +2,13 @@ package cjs.DE_plugin.dragon_egg.egg_break_prevention;
 
 import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
+import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPhysicsEvent;
+import org.bukkit.event.block.BlockPistonExtendEvent;
+import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 
@@ -45,5 +48,35 @@ public class EggBreakPreventionListener implements Listener {
     public void onEntityExplode(EntityExplodeEvent event) {
         // 폭발에 의해 파괴될 블록 목록에서 드래곤 알을 모두 제거합니다.
         event.blockList().removeIf(block -> block.getType() == Material.DRAGON_EGG);
+    }
+
+    /**
+     * 피스톤이 드래곤 알을 미는 것을 방지합니다.
+     * @param event 피스톤 확장 이벤트
+     */
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPistonExtend(BlockPistonExtendEvent event) {
+        // 피스톤이 밀어내는 블록 목록을 확인합니다.
+        for (Block block : event.getBlocks()) {
+            if (block.getType() == Material.DRAGON_EGG) {
+                event.setCancelled(true);
+                return;
+            }
+        }
+    }
+
+    /**
+     * 점착 피스톤이 드래곤 알을 당기는 것을 방지합니다.
+     * @param event 피스톤 수축 이벤트
+     */
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPistonRetract(BlockPistonRetractEvent event) {
+        // 점착 피스톤이 당기는 블록 목록을 확인합니다.
+        for (Block block : event.getBlocks()) {
+            if (block.getType() == Material.DRAGON_EGG) {
+                event.setCancelled(true);
+                return;
+            }
+        }
     }
 }

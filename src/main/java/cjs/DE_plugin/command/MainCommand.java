@@ -37,7 +37,9 @@ public class MainCommand implements CommandExecutor {
             SettingsManager.HIDE_FOOTPRINTS_AT_NIGHT,
             SettingsManager.PREVENT_PORTAL_WITH_EGG,
             SettingsManager.CHAT_BANNED,
-            SettingsManager.KILL_LOG_DISABLED
+            SettingsManager.KILL_LOG_DISABLED,
+            SettingsManager.GOLDEN_APPLE_REGEN_DURATION_SECONDS,
+            SettingsManager.CRAFT_NETHERITE_TEMPLATE_ENABLED
     );
 
     private static final List<String> BORDER_SETTINGS_KEYS = Arrays.asList(
@@ -48,7 +50,10 @@ public class MainCommand implements CommandExecutor {
 
     private static final List<String> ENCHANT_SETTINGS_KEYS = Arrays.asList(
             SettingsManager.ENCHANT_PROTECTION_MAX_LEVEL,
-            SettingsManager.ENCHANT_SHARPNESS_MAX_LEVEL
+            SettingsManager.ENCHANT_SHARPNESS_MAX_LEVEL,
+            SettingsManager.ENCHANT_OVER_LIMIT_COST,
+            SettingsManager.ENCHANT_BOW_INFINITY_DISABLED,
+            SettingsManager.ENCHANT_ARMOR_MENDING_DISABLED
     );
 
 

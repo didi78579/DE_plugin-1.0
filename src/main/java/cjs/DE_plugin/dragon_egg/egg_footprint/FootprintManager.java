@@ -14,12 +14,14 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.logging.Level;
 
 public class FootprintManager {
 
     private final DE_plugin plugin;
-    private final Set<Footprint> footprints = new HashSet<>();
+    // [수정] 동시성 문제를 예방하기 위해 스레드에 안전한 Set으로 변경합니다.
+    private final Set<Footprint> footprints = new CopyOnWriteArraySet<>();
     private final Set<UUID> trackedPlayers = new HashSet<>();
     private final Map<UUID, Location> lastLocations = new ConcurrentHashMap<>();
     private final File footprintFile;
@@ -54,26 +56,39 @@ public class FootprintManager {
                 plugin.getLogger().warning("Could not load footprint " + key + ": " + e.getMessage());
             }
         }
+
         plugin.getLogger().info(footprints.size() + " footprints loaded.");
     }
 
-    public void saveFootprints() {
-        footprintConfig = new YamlConfiguration();
+    /**
+     * [수정] 현재 메모리에 있는 발자국 목록을 파일에 즉시 덮어쓰는 내부 메소드입니다.
+     * 파일 I/O를 유발하므로 잦은 호출은 성능 저하의 원인이 될 수 있습니다.
+     */
+    private synchronized void rewriteFootprintFile() {
+        FileConfiguration newConfig = new YamlConfiguration();
         int i = 0;
         for (Footprint fp : footprints) {
+            if (fp.getLocation() == null) {
+                continue;
+            }
             String path = "footprints." + i;
-            footprintConfig.set(path + ".front", fp.getFrontEntityId().toString());
-            footprintConfig.set(path + ".back", fp.getBackEntityId().toString());
-            footprintConfig.set(path + ".owner", fp.getOwnerId().toString());
-            footprintConfig.set(path + ".location", fp.getLocation());
-            footprintConfig.set(path + ".time", fp.getCreationTime());
+            newConfig.set(path + ".front", fp.getFrontEntityId().toString());
+            newConfig.set(path + ".back", fp.getBackEntityId().toString());
+            newConfig.set(path + ".owner", fp.getOwnerId().toString());
+            newConfig.set(path + ".location", fp.getLocation());
+            newConfig.set(path + ".time", fp.getCreationTime());
             i++;
         }
         try {
-            footprintConfig.save(footprintFile);
+            newConfig.save(footprintFile);
         } catch (IOException e) {
             plugin.getLogger().log(Level.SEVERE, "Could not save footprints to " + footprintFile, e);
         }
+    }
+
+    public void saveFootprints() {
+        // 이제 내부 헬퍼 메소드를 호출합니다.
+        rewriteFootprintFile();
     }
 
     public boolean isTracking(UUID uuid) {
@@ -100,6 +115,14 @@ public class FootprintManager {
 
     public void addFootprint(Footprint footprint) {
         footprints.add(footprint);
+        rewriteFootprintFile();
+    }
+
+    public void removeFootprint(Footprint footprint) {
+        if (footprints.remove(footprint)) {
+            removeFootprintEntity(footprint);
+            rewriteFootprintFile();
+        }
     }
 
     public void removeFootprintEntity(Footprint footprint) {
@@ -107,6 +130,14 @@ public class FootprintManager {
         new BukkitRunnable() {
             @Override
             public void run() {
+
+                Location loc = footprint.getLocation();
+                if (loc == null || loc.getWorld() == null) return;
+                
+                if (!loc.getChunk().isLoaded()) {
+                    loc.getChunk().load();
+                }
+
                 Entity front = Bukkit.getEntity(footprint.getFrontEntityId());
                 if (front != null) front.remove();
                 Entity back = Bukkit.getEntity(footprint.getBackEntityId());
@@ -124,12 +155,11 @@ public class FootprintManager {
     }
 
     public void clearAllFootprints() {
+        // [수정] 게임 중지/종료 시 호출되며, 모든 발자국 엔티티와 데이터를 제거합니다.
         new HashSet<>(footprints).forEach(this::removeFootprintEntity);
         footprints.clear();
         trackedPlayers.clear();
         lastLocations.clear();
-        if (footprintFile.exists()) {
-            footprintFile.delete();
-        }
+        rewriteFootprintFile(); // 파일도 비웁니다.
     }
 }

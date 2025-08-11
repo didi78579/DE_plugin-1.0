@@ -64,5 +64,15 @@ public class AltarManager {
         for (Location loc : blocksToRestore.keySet()) {
             altarBlocks.remove(loc);
         }
+        // 제단 중심(알 위치)도 보호 목록에서 제거합니다.
+        altarBlocks.remove(altarCenterLocation);
+    }
+
+    /**
+     * [신규] 활성화된 제단이 하나라도 있는지 확인합니다.
+     * @return 제단이 하나 이상 존재하면 true
+     */
+    public static boolean isAnyAltarActive() {
+        return !originalBlocks.isEmpty();
     }
 }

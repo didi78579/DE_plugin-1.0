@@ -19,7 +19,7 @@ public class SettingsManager {
     public static final String HIDE_COORDINATES = "world-rules.hide-coordinates";
     public static final String HIDE_FOOTPRINTS_AT_NIGHT = "world-rules.hide-footprints-at-night";
     public static final String PLAYER_EXP_DROP_MULTIPLIER = "player-exp-drop-multiplier";
-    public static final String POTION_LIMIT = "potion-limit";
+    public static final String POTION_LIMIT = "potion-limit"; // [수정] 드래곤 경험치 설정 키 이름 변경
     public static final String RESPAWNED_DRAGON_EXP_LEVEL = "respawned-dragon-exp-level";
     public static final String EGG_FOOTPRINT_DURATION_DAYS = "dragon-egg-footprint-duration-days";
     public static final String GAME_PLAY_TIME_DAYS = "game-play-time-days";
@@ -28,9 +28,13 @@ public class SettingsManager {
     public static final String WORLDBORDER_END_ENABLED = "worldborder.end-enabled";
     public static final String ENCHANT_PROTECTION_MAX_LEVEL = "enchant-protection-max-level";
     public static final String ENCHANT_SHARPNESS_MAX_LEVEL = "enchant-sharpness-max-level";
+    public static final String ENCHANT_OVER_LIMIT_COST = "enchant-over-limit-cost";
+    // [신규] 활 무한, 갑옷 수선 비활성화 설정
+    public static final String ENCHANT_BOW_INFINITY_DISABLED = "enchant-bow-infinity-disabled";
+    public static final String ENCHANT_ARMOR_MENDING_DISABLED = "enchant-armor-mending-disabled";
     // [신규] 황금사과 및 형판 레시피 설정
     public static final String GOLDEN_APPLE_REGEN_DURATION_SECONDS = "golden-apple-regen-duration-seconds";
-    public static final String CUSTOM_TEMPLATE_RECIPE_ENABLED = "custom-template-recipe-enabled";
+    public static final String CRAFT_NETHERITE_TEMPLATE_ENABLED = "craft-netherite-template-enabled";
     // [핵심 추가] 새로운 설정 키
     public static final String PREVENT_PORTAL_WITH_EGG = "dragon-egg.prevent-portal-travel";
     // [신규] 채팅 및 킬로그 설정 키
@@ -57,17 +61,21 @@ public class SettingsManager {
         config.addDefault(HIDE_FOOTPRINTS_AT_NIGHT, true);
         config.addDefault(PLAYER_EXP_DROP_MULTIPLIER, 1.0); // 100%
         config.addDefault(POTION_LIMIT, 2);
-        config.addDefault(RESPAWNED_DRAGON_EXP_LEVEL, 45);
+        config.addDefault(RESPAWNED_DRAGON_EXP_LEVEL, 30); // [수정] 부활 드래곤 처치 시 획득할 경험치 '레벨'
         config.addDefault(EGG_FOOTPRINT_DURATION_DAYS, 5);
         config.addDefault(GAME_PLAY_TIME_DAYS, 100);
         config.addDefault(WORLDBORDER_OVERWORLD_SIZE, 1000);
-        config.addDefault(WORLDBORDER_NETHER_SCALE, 2);
+        config.addDefault(WORLDBORDER_NETHER_SCALE, 4);
         config.addDefault(WORLDBORDER_END_ENABLED, true);
         config.addDefault(ENCHANT_PROTECTION_MAX_LEVEL, 7);
         config.addDefault(ENCHANT_SHARPNESS_MAX_LEVEL, 10);
+        config.addDefault(ENCHANT_OVER_LIMIT_COST, 35);
+        // [신규] 활 무한, 갑옷 수선 비활성화 설정 기본값
+        config.addDefault(ENCHANT_BOW_INFINITY_DISABLED, true);
+        config.addDefault(ENCHANT_ARMOR_MENDING_DISABLED, true);
         // [신규] 황금사과 및 형판 레시피 설정 기본값
         config.addDefault(GOLDEN_APPLE_REGEN_DURATION_SECONDS, 2);
-        config.addDefault(CUSTOM_TEMPLATE_RECIPE_ENABLED, true);
+        config.addDefault(CRAFT_NETHERITE_TEMPLATE_ENABLED, true);
         // [핵심 추가] 새로운 설정의 기본값
         config.addDefault(PREVENT_PORTAL_WITH_EGG, true);
         // [신규] 채팅 및 킬로그 설정 기본값

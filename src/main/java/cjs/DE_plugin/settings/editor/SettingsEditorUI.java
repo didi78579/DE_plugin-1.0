@@ -71,7 +71,6 @@ public class SettingsEditorUI {
         sendBooleanSetting(player, "발전과제 숨기기", SettingsManager.HIDE_ADVANCEMENTS);
         sendBooleanSetting(player, "좌표 숨기기", SettingsManager.HIDE_COORDINATES);
         sendBooleanSetting(player, "밤에 발자국 숨기기", SettingsManager.HIDE_FOOTPRINTS_AT_NIGHT);
-        // [핵심 추가] 아래 한 줄을 추가합니다.
         sendBooleanSetting(player, "알 소지 시 차원이동 금지", SettingsManager.PREVENT_PORTAL_WITH_EGG);
         sendBooleanSetting(player, "채팅 금지", SettingsManager.CHAT_BANNED);
         sendBooleanSetting(player, "킬로그 비활성화", SettingsManager.KILL_LOG_DISABLED);

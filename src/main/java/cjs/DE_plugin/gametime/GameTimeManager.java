@@ -225,45 +225,56 @@ public class GameTimeManager implements Listener {
     }
 
     private void startTimerTask() {
-        this.timerTask = new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (!isRunning) {
-                    this.cancel();
-                    return;
-                }
+        // [FIX] Refactor anonymous class to a named inner class to prevent NoClassDefFoundError.
+        // First, cancel any existing task to prevent duplicates.
+        if (this.timerTask != null && !this.timerTask.isCancelled()) {
+            this.timerTask.cancel();
+        }
+        this.timerTask = new GameTimerRunnable().runTaskTimer(plugin, 0L, 20L);
+    }
 
-                World mainWorld = Bukkit.getWorlds().get(0);
-                if (mainWorld == null) return;
+    /**
+     * A named inner class for the game timer task.
+     * This replaces the anonymous class to improve build stability and avoid ClassNotFoundException.
+     */
+    private class GameTimerRunnable extends BukkitRunnable {
+        @Override
+        public void run() {
+            if (!isRunning) {
+                this.cancel();
+                return;
+            }
 
-                long now = mainWorld.getFullTime();
+            World mainWorld = Bukkit.getWorlds().get(0);
+            if (mainWorld == null) return;
 
-                if (now >= gameEndTick) {
-                    endGame();
-                    this.cancel();
-                    return;
-                }
+            long now = mainWorld.getFullTime();
+
+            if (now >= gameEndTick) {
+                endGame();
+                this.cancel();
+                return;
+            }
+
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                updateScoreboard(player);
+            }
+
+            long remainingTicks = gameEndTick - now;
+            if (remainingTicks <= 1200) { // Last minute countdown
+                long countdownSeconds = (remainingTicks / 20) + 1;
+                Component actionBarComponent = Component.text("§c§l드래곤 알 부화까지: " + countdownSeconds + " 초");
+
+                float progress = (1200f - remainingTicks) / 1200f;
+                float volume = 0.5f + progress * 1.5f;
+                float pitch = 1.0f + progress;
 
                 for (Player player : Bukkit.getOnlinePlayers()) {
-                    updateScoreboard(player);
-                }
-
-                long remainingTicks = gameEndTick - now;
-                if (remainingTicks <= 1200) {
-                    long countdownSeconds = (remainingTicks / 20) + 1;
-                    Component actionBarComponent = Component.text("§c§l드래곤 알 부화까지: " + countdownSeconds + " 초");
-
-                    float progress = (1200f - remainingTicks) / 1200f;
-                    float volume = 0.5f + progress * 1.5f;
-                    float pitch = 1.0f + progress;
-
-                    for (Player player : Bukkit.getOnlinePlayers()) {
-                        player.sendActionBar(actionBarComponent);
-                        player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_HEARTBEAT, volume, pitch);
-                    }
+                    player.sendActionBar(actionBarComponent);
+                    player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_HEARTBEAT, volume, pitch);
                 }
             }
-        }.runTaskTimer(plugin, 0L, 20L);
+        }
     }
 
     private void updateScoreboard(Player player) {

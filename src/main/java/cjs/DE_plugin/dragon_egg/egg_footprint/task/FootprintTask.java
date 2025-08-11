@@ -46,7 +46,8 @@ public class FootprintTask extends BukkitRunnable {
 
     private void checkPlayerInventories() {
         Set<UUID> playersWithEgg = Bukkit.getOnlinePlayers().stream()
-                .filter(p -> p.getInventory().contains(Material.DRAGON_EGG))
+                // [수정] 주 인벤토리뿐만 아니라 왼손(off-hand)에 드래곤 알을 들고 있는 경우도 확인합니다.
+                .filter(p -> p.getInventory().contains(Material.DRAGON_EGG) || p.getInventory().getItemInOffHand().getType() == Material.DRAGON_EGG)
                 .map(Player::getUniqueId)
                 .collect(Collectors.toSet());
 
@@ -68,21 +69,19 @@ public class FootprintTask extends BukkitRunnable {
         World mainWorld = Bukkit.getWorlds().get(0);
         boolean isDay = mainWorld.getTime() >= 0 && mainWorld.getTime() < 13000;
 
-        // 설정에서 발자국 지속시간(일)을 가져와 밀리초로 변환합니다.
+        // [복원] 시간 기반 만료 로직
         long durationDays = sm.getInt(SettingsManager.EGG_FOOTPRINT_DURATION_DAYS);
-        if (durationDays < 0) return; // 음수 값은 무한 지속을 의미하므로, 만료 로직을 건너뜁니다.
-
         // 마인크래프트 하루는 20분입니다. (20분 * 60초 * 1000밀리초)
         long durationMs = durationDays * 20 * 60 * 1000;
 
-        // ConcurrentModificationException을 방지하기 위해 Iterator 사용
-        for (Iterator<Footprint> iterator = footprintManager.getAllFootprints().iterator(); iterator.hasNext(); ) {
-            Footprint fp = iterator.next();
+        // Concurrent-safe 컬렉션(예: CopyOnWriteArraySet)을 사용하면 반복 중 수정이 안전합니다.
+        for (Footprint fp : footprintManager.getAllFootprints()) {
             if (System.currentTimeMillis() - fp.getCreationTime() > durationMs) {
-                footprintManager.removeFootprintEntity(fp); // 엔티티 제거
-                iterator.remove(); // 컬렉션에서 제거
+                // FootprintManager를 통해 발자국을 제거합니다.
+                // 이 방식은 Manager가 내부 컬렉션과 파일 저장을 모두 처리한다고 가정합니다.
+                footprintManager.removeFootprint(fp);
             } else {
-                // 밤/낮에 따라 텍스트를 지우거나 다시 채워넣어 표시 여부 조절
+                // 만료되지 않은 발자국의 가시성을 업데이트합니다.
                 toggleVisibility(fp, isDay);
             }
         }

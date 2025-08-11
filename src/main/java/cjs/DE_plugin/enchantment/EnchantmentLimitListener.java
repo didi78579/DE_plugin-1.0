@@ -1,100 +1,152 @@
 package cjs.DE_plugin.enchantment;
 
+import org.bukkit.GameMode;
 import cjs.DE_plugin.DE_plugin;
 import cjs.DE_plugin.settings.SettingsManager;
 import org.bukkit.Material;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeModifier;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.PrepareAnvilEvent;
 import org.bukkit.inventory.AnvilInventory;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 public class EnchantmentLimitListener implements Listener {
 
+    private final DE_plugin plugin;
     private final SettingsManager sm;
 
+    // [추가] 자주 사용하는 인챈트를 상수로 정의하여 중복 조회를 피하고 가독성을 높입니다.
+    private static final Enchantment INFINITY = Enchantment.getByKey(NamespacedKey.minecraft("infinity"));
+    private static final Enchantment MENDING = Enchantment.getByKey(NamespacedKey.minecraft("mending"));
+    private static final Enchantment PROTECTION = Enchantment.getByKey(NamespacedKey.minecraft("protection"));
+    private static final Enchantment SHARPNESS = Enchantment.getByKey(NamespacedKey.minecraft("sharpness"));
+
     public EnchantmentLimitListener(DE_plugin plugin) {
+        this.plugin = plugin;
         this.sm = plugin.getSettingsManager();
+    }
+
+    @EventHandler
+    public void onEnchantItem(EnchantItemEvent event) {
+        // 활 무한 비활성화
+        if (INFINITY != null && sm.getBoolean(SettingsManager.ENCHANT_BOW_INFINITY_DISABLED) && event.getItem().getType() == Material.BOW) {
+            event.getEnchantsToAdd().remove(INFINITY);
+        }
+
+        // 갑옷 수선 비활성화
+        if (MENDING != null && sm.getBoolean(SettingsManager.ENCHANT_ARMOR_MENDING_DISABLED) && isArmor(event.getItem())) {
+            event.getEnchantsToAdd().remove(MENDING);
+        }
     }
 
     @EventHandler
     public void onPrepareAnvil(PrepareAnvilEvent event) {
         AnvilInventory inventory = event.getInventory();
-        ItemStack firstItem = inventory.getItem(0);
-        ItemStack secondItem = inventory.getItem(1);
+        ItemStack first = inventory.getItem(0);
+        ItemStack second = inventory.getItem(1);
 
         // 모루에 아이템이 2개 모두 있어야 함
-        if (firstItem == null || secondItem == null) {
+        if (first == null || second == null) {
             return;
         }
 
-        // 설정에서 최대 레벨 값을 가져옴
+        // [신규] 활 무한 조합 비활성화
+        if (sm.getBoolean(SettingsManager.ENCHANT_BOW_INFINITY_DISABLED) && first.getType() == Material.BOW && isEnchantedBookWith(second, INFINITY)) {
+            event.setResult(null);
+            return;
+        }
+
+        // [신규] 갑옷 수선 조합 비활성화
+        if (sm.getBoolean(SettingsManager.ENCHANT_ARMOR_MENDING_DISABLED) && isArmor(first) && isEnchantedBookWith(second, MENDING)) {
+            event.setResult(null);
+            return;
+        }
+
+        // 1. 최종 인챈트 목록을 계산하기 위한 맵을 준비합니다. (첫 번째 아이템 기준)
+        Map<Enchantment, Integer> finalEnchants = new HashMap<>(getEnchantments(first));
+        boolean customUpgradeOccurred = false;
+
+        // 2. 두 번째 아이템의 인챈트를 순회하며 병합 로직을 수행합니다.
+        Map<Enchantment, Integer> secondEnchants = getEnchantments(second);
         int protectionMax = sm.getInt(SettingsManager.ENCHANT_PROTECTION_MAX_LEVEL);
         int sharpnessMax = sm.getInt(SettingsManager.ENCHANT_SHARPNESS_MAX_LEVEL);
 
-        // 결과 아이템을 복제하여 작업 (원본을 직접 수정하지 않음)
-        ItemStack result = event.getResult();
-        if (result == null) {
-            // 바닐라에서 조합이 불가능한 경우(예: 보호4+보호4), 첫 아이템을 기반으로 결과물을 생성
-            result = firstItem.clone();
-        } else {
-            result = result.clone();
+        for (Map.Entry<Enchantment, Integer> entry : secondEnchants.entrySet()) {
+            Enchantment enchant = entry.getKey();
+            int level2 = entry.getValue();
+
+            // 다른 인챈트와 충돌하는지 확인합니다.
+            boolean conflicts = false;
+            for (Enchantment existingEnchant : finalEnchants.keySet()) {
+                if (enchant != existingEnchant && enchant.conflictsWith(existingEnchant)) {
+                    conflicts = true;
+                    break;
+                }
+            }
+            if (conflicts) continue;
+
+            // 충돌하지 않으면, 최종 레벨을 계산합니다.
+            int level1 = finalEnchants.getOrDefault(enchant, 0);
+            int finalLevel = (level1 == level2) ? level1 + 1 : Math.max(level1, level2);
+
+            // 3. 계산된 레벨이 커스텀 레벨업 조건에 맞는지 확인합니다.
+            boolean isCustomLevel = false;
+            int vanillaMax = enchant.getMaxLevel();
+            int customMax = 0;
+
+            if (enchant.equals(PROTECTION)) {
+                customMax = protectionMax;
+            } else if (enchant.equals(SHARPNESS)) {
+                customMax = sharpnessMax;
+            }
+
+            // 해당 인챈트가 플러그인 관리 대상이고, 결과 레벨이 커스텀 범위에 속하는지 확인
+            if (customMax > 0 && finalLevel > vanillaMax && finalLevel <= customMax) {
+                // [수정] 커스텀 레벨업은 동일한 레벨의 아이템 두 개를 조합할 때만 허용합니다 (N + N -> N+1).
+                if (level1 == level2 && finalLevel == level1 + 1) {
+                    isCustomLevel = true;
+                }
+            }
+
+            if (isCustomLevel) {
+                finalEnchants.put(enchant, finalLevel);
+                customUpgradeOccurred = true;
+            } else if (finalLevel <= enchant.getMaxLevel()) {
+                // 바닐라 레벨 범위 내의 유효한 조합이면 최종 목록에 추가합니다.
+                finalEnchants.put(enchant, finalLevel);
+            }
         }
 
-        ItemMeta resultMeta = result.getItemMeta();
-        if (resultMeta == null) return;
+        // 4. [수정] 커스텀 레벨업이 발생한 경우, 바닐라 결과와 상관없이 플러그인이 직접 결과물을 생성하고 비용을 설정합니다.
+        // 이렇게 해야 '아이템+책' 조합 시 바닐라가 낮은 레벨의 결과물을 만드는 것을 덮어쓸 수 있습니다.
+        if (customUpgradeOccurred) {
+            ItemStack result = first.clone();
+            ItemMeta meta = result.getItemMeta();
 
-        boolean isChanged = false;
-
-        // 보호 인챈트 처리
-        isChanged |= handleEnchantment(resultMeta, firstItem, secondItem, Enchantment.PROTECTION_ENVIRONMENTAL, protectionMax);
-        // 날카로움 인챈트 처리
-        isChanged |= handleEnchantment(resultMeta, firstItem, secondItem, Enchantment.DAMAGE_ALL, sharpnessMax);
-
-        if (isChanged) {
-            result.setItemMeta(resultMeta);
+            // 모든 인챈트를 지우고 계산된 최종 인챈트 목록을 새로 적용합니다.
+            clearEnchantments(meta);
+            for (Map.Entry<Enchantment, Integer> entry : finalEnchants.entrySet()) {
+                applyEnchantment(meta, entry.getKey(), entry.getValue());
+            }
+            result.setItemMeta(meta);
             event.setResult(result);
 
-            // 경험치 비용을 적절히 설정 (예시: 레벨당 4)
-            // 이 부분은 게임 밸런스에 맞게 조절할 수 있습니다.
-            int finalCost = inventory.getRepairCost() + 4 * (result.getEnchantments().values().stream().mapToInt(Integer::intValue).sum());
-            inventory.setRepairCost(Math.min(finalCost, 39)); // 모루 최대 비용은 39
+            int cost = sm.getInt(SettingsManager.ENCHANT_OVER_LIMIT_COST);
+            plugin.getServer().getScheduler().runTask(plugin, () -> inventory.setRepairCost(cost));
         }
-    }
-
-    /**
-     * 특정 인챈트의 조합을 처리하고, 레벨이 확장되었는지 여부를 반환합니다.
-     */
-    private boolean handleEnchantment(ItemMeta resultMeta, ItemStack first, ItemStack second, Enchantment targetEnchant, int maxLevel) {
-        Map<Enchantment, Integer> firstEnchants = getEnchantments(first);
-        Map<Enchantment, Integer> secondEnchants = getEnchantments(second);
-
-        int level1 = firstEnchants.getOrDefault(targetEnchant, 0);
-        int level2 = secondEnchants.getOrDefault(targetEnchant, 0);
-
-        if (level1 == 0 && level2 == 0) {
-            return false; // 두 아이템 모두 해당 인챈트가 없음
-        }
-
-        int finalLevel;
-        if (level1 == level2) {
-            finalLevel = level1 + 1; // 같은 레벨이면 +1
-        } else {
-            finalLevel = Math.max(level1, level2); // 다른 레벨이면 더 높은 쪽으로
-        }
-
-        // 바닐라 최대 레벨을 초과하지만, 우리가 설정한 최대 레벨 이하인 경우
-        if (finalLevel > targetEnchant.getMaxLevel() && finalLevel <= maxLevel) {
-            applyEnchantment(resultMeta, targetEnchant, finalLevel);
-            return true;
-        }
-
-        return false;
     }
 
     /**
@@ -117,5 +169,36 @@ public class EnchantmentLimitListener implements Listener {
         } else {
             meta.addEnchant(enchant, level, true);
         }
+    }
+
+    /**
+     * [신규] 아이템 메타에서 모든 인챈트를 제거합니다.
+     */
+    private void clearEnchantments(ItemMeta meta) {
+        if (meta instanceof EnchantmentStorageMeta) {
+            EnchantmentStorageMeta bookMeta = (EnchantmentStorageMeta) meta;
+            // 복사본을 만들어 ConcurrentModificationException 방지
+            new HashMap<>(bookMeta.getStoredEnchants()).keySet().forEach(bookMeta::removeStoredEnchant);
+        } else {
+            new HashMap<>(meta.getEnchants()).keySet().forEach(meta::removeEnchant);
+        }
+    }
+
+    /**
+     * 아이템이 갑옷인지 확인합니다.
+     */
+    private boolean isArmor(ItemStack item) {
+        if (item == null) return false;
+        String typeName = item.getType().name();
+        return typeName.endsWith("_HELMET") || typeName.endsWith("_CHESTPLATE") || typeName.endsWith("_LEGGINGS") || typeName.endsWith("_BOOTS");
+    }
+
+    /**
+     * 아이템이 특정 인챈트가 부여된 책인지 확인합니다.
+     */
+    private boolean isEnchantedBookWith(ItemStack item, Enchantment enchant) {
+        if (item == null || item.getType() != Material.ENCHANTED_BOOK || enchant == null) return false;
+        EnchantmentStorageMeta meta = (EnchantmentStorageMeta) item.getItemMeta();
+        return meta != null && meta.hasStoredEnchant(enchant);
     }
 }

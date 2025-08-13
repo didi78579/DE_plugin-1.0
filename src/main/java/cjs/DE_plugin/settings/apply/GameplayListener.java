@@ -51,11 +51,17 @@ public class GameplayListener implements Listener {
             // DragonBattle 객체가 null이 아니고, 엔드 포탈이 이미 존재하는지(두 번째 드래곤 이후인지) 확인
             if (event.getEntity().getWorld().getEnderDragonBattle() != null &&
                     event.getEntity().getWorld().getEnderDragonBattle().getEndPortalLocation() != null) {
-
-                // [수정] 설정된 '레벨'에 도달하는데 필요한 총 경험치를 계산하여 드롭합니다.
-                int targetLevel = sm.getInt(SettingsManager.RESPAWNED_DRAGON_EXP_LEVEL);
-                int expToDrop = getExpForLevel(targetLevel);
-                event.setDroppedExp(expToDrop);
+                
+                Player killer = event.getEntity().getKiller();
+                // 드래곤을 처치한 플레이어가 있을 경우에만 경험치를 지급합니다.
+                if (killer != null) {
+                    // [수정] 설정된 레벨에 도달하는데 필요한 '총 경험치량'을 계산하여 지급합니다.
+                    int targetLevel = sm.getInt(SettingsManager.RESPAWNED_DRAGON_EXP_LEVEL);
+                    int expToAdd = getExpForLevel(targetLevel);
+                    killer.giveExp(expToAdd);
+                    // 기본적으로 드롭되는 경험치는 0으로 설정하여 중복 지급을 방지합니다.
+                    event.setDroppedExp(0);
+                }
             }
         }
     }
@@ -81,10 +87,13 @@ public class GameplayListener implements Listener {
             return 0;
         }
         if (level <= 16) {
+            // 0-16레벨: level^2 + 6 * level
             return (int) (Math.pow(level, 2) + 6 * level);
         } else if (level <= 31) {
+            // 17-31레벨: 2.5 * level^2 - 40.5 * level + 360
             return (int) (2.5 * Math.pow(level, 2) - 40.5 * level + 360);
-        } else { // level >= 32
+        } else { // 32레벨 이상
+            // 32+레벨: 4.5 * level^2 - 162.5 * level + 2220
             return (int) (4.5 * Math.pow(level, 2) - 162.5 * level + 2220);
         }
     }

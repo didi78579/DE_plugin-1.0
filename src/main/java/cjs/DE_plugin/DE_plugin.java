@@ -17,6 +17,7 @@ import cjs.DE_plugin.dragon_egg.egg_break_prevention.EggBreakPreventionListener;
 import cjs.DE_plugin.dragon_egg.egg_death_event.AltarProtectionListener;
 import cjs.DE_plugin.dragon_egg.egg_death_event.EggDeathListener;
 import cjs.DE_plugin.dragon_egg.egg_storage_prevention.EggStoragePreventionListener;
+import cjs.DE_plugin.dragon_egg.egg_footprint.FootprintChunkListener;
 import cjs.DE_plugin.dragon_egg.egg_footprint.FootprintManager;
 import cjs.DE_plugin.dragon_egg.egg_footprint.task.FootprintTask;
 import org.bukkit.Bukkit;
@@ -55,11 +56,12 @@ public final class DE_plugin extends JavaPlugin {
 
         // --- 리스너 등록 ---
         // 드래곤 알
-        getServer().getPluginManager().registerEvents(new EggAcquisitionListener(), this);
+        getServer().getPluginManager().registerEvents(new EggAcquisitionListener(this), this);
         getServer().getPluginManager().registerEvents(new EggBreakPreventionListener(), this);
         getServer().getPluginManager().registerEvents(new EggDeathListener(), this);
         getServer().getPluginManager().registerEvents(new AltarProtectionListener(this), this);
         getServer().getPluginManager().registerEvents(new EggStoragePreventionListener(), this);
+        getServer().getPluginManager().registerEvents(new FootprintChunkListener(this.footprintManager), this); // [신규] 청크 로드 시 만료된 발자국 제거
         getServer().getPluginManager().registerEvents(new PlacedEggListener(this.placedEggManager), this); // [추가]
         // 설정 적용
         getServer().getPluginManager().registerEvents(new BannedItemsListener(this.settingsManager), this);
@@ -96,7 +98,8 @@ public final class DE_plugin extends JavaPlugin {
             this.placedEggManager.cancelTask();
         }
         if (this.footprintManager != null) {
-            this.footprintManager.saveFootprints();
+            // [수정] 자동 저장 태스크를 중지하고 최종 데이터를 저장하기 위해 shutdown()을 호출합니다.
+            this.footprintManager.shutdown();
         }
         if (this.footprintTask != null && !this.footprintTask.isCancelled()) {
             this.footprintTask.cancel();

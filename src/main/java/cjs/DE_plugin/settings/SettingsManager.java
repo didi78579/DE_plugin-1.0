@@ -37,6 +37,8 @@ public class SettingsManager {
     public static final String CRAFT_NETHERITE_TEMPLATE_ENABLED = "craft-netherite-template-enabled";
     // [핵심 추가] 새로운 설정 키
     public static final String PREVENT_PORTAL_WITH_EGG = "dragon-egg.prevent-portal-travel";
+    // [신규] 드래곤 알 획득 방식 설정
+    public static final String EGG_ACQUISITION_BY_CLICK_ENABLED = "dragon-egg.acquisition-by-click-enabled";
     // [신규] 채팅 및 킬로그 설정 키
     public static final String CHAT_BANNED = "game-rules.chat-banned";
     public static final String KILL_LOG_DISABLED = "game-rules.kill-log-disabled";
@@ -78,6 +80,8 @@ public class SettingsManager {
         config.addDefault(CRAFT_NETHERITE_TEMPLATE_ENABLED, true);
         // [핵심 추가] 새로운 설정의 기본값
         config.addDefault(PREVENT_PORTAL_WITH_EGG, true);
+        // [신규] 드래곤 알 획득 방식 설정 기본값
+        config.addDefault(EGG_ACQUISITION_BY_CLICK_ENABLED, true);
         // [신규] 채팅 및 킬로그 설정 기본값
         config.addDefault(CHAT_BANNED, true);
         config.addDefault(KILL_LOG_DISABLED, true);

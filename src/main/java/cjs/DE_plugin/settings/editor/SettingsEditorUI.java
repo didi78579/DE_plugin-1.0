@@ -44,6 +44,12 @@ public class SettingsEditorUI {
         enchantButton.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder("§e인챈트 최대 레벨 설정을 엽니다.").create()));
         player.spigot().sendMessage(enchantButton);
 
+        // [신규] 드래곤 알 설정 버튼
+        TextComponent dragonEggButton = new TextComponent("  §5▶ 드래곤 알 설정");
+        dragonEggButton.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/de settings dragon"));
+        dragonEggButton.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder("§e드래곤 알 관련 설정을 엽니다.").create()));
+        player.spigot().sendMessage(dragonEggButton);
+
         player.sendMessage("§e===================================");
     }
 
@@ -56,7 +62,7 @@ public class SettingsEditorUI {
         sendNumberSetting(player, "주민 거래 제한", SettingsManager.VILLAGER_TRADE_LIMIT, 1);
         sendNumberSetting(player, "포션 최대 소지 수", SettingsManager.POTION_LIMIT, 1);
         sendNumberSetting(player, "부활 드래곤 경험치(Lv)", SettingsManager.RESPAWNED_DRAGON_EXP_LEVEL, 5);
-        sendNumberSetting(player, "알 발자국 지속시간(일)", SettingsManager.EGG_FOOTPRINT_DURATION_DAYS, 1);
+        sendNumberSetting(player, "황금사과 재생 시간(초)", SettingsManager.GOLDEN_APPLE_REGEN_DURATION_SECONDS, 1);
         sendNumberSetting(player, "게임 플레이 타임(일)", SettingsManager.GAME_PLAY_TIME_DAYS, 1);
 
         // 비율(소수) 설정
@@ -71,9 +77,9 @@ public class SettingsEditorUI {
         sendBooleanSetting(player, "발전과제 숨기기", SettingsManager.HIDE_ADVANCEMENTS);
         sendBooleanSetting(player, "좌표 숨기기", SettingsManager.HIDE_COORDINATES);
         sendBooleanSetting(player, "밤에 발자국 숨기기", SettingsManager.HIDE_FOOTPRINTS_AT_NIGHT);
-        sendBooleanSetting(player, "알 소지 시 차원이동 금지", SettingsManager.PREVENT_PORTAL_WITH_EGG);
         sendBooleanSetting(player, "채팅 금지", SettingsManager.CHAT_BANNED);
         sendBooleanSetting(player, "킬로그 비활성화", SettingsManager.KILL_LOG_DISABLED);
+        sendBooleanSetting(player, "네더라이트 형판 조합", SettingsManager.CRAFT_NETHERITE_TEMPLATE_ENABLED);
 
         player.sendMessage("§e===================================");
         sendBackButton(player); // 뒤로가기 버튼 추가
@@ -98,6 +104,21 @@ public class SettingsEditorUI {
         player.sendMessage("§e======== §f[인챈트 설정] §e========");
         sendNumberSetting(player, "보호 최대 레벨", SettingsManager.ENCHANT_PROTECTION_MAX_LEVEL, 1);
         sendNumberSetting(player, "날카로움 최대 레벨", SettingsManager.ENCHANT_SHARPNESS_MAX_LEVEL, 1);
+        sendNumberSetting(player, "초과 인챈트 비용(Lv)", SettingsManager.ENCHANT_OVER_LIMIT_COST, 5);
+        sendBooleanSetting(player, "활 무한 금지", SettingsManager.ENCHANT_BOW_INFINITY_DISABLED);
+        sendBooleanSetting(player, "갑옷 수선 금지", SettingsManager.ENCHANT_ARMOR_MENDING_DISABLED);
+        player.sendMessage("§e===================================");
+        sendBackButton(player); // 뒤로가기 버튼 추가
+    }
+
+    /**
+     * [신규] 드래곤 알 설정 UI를 엽니다.
+     */
+    public void openDragonEggSettings(Player player) {
+        player.sendMessage("§e======== §f[드래곤 알 설정] §e========");
+        sendNumberSetting(player, "알 발자국 지속시간(일)", SettingsManager.EGG_FOOTPRINT_DURATION_DAYS, 1);
+        sendBooleanSetting(player, "알 소지 시 차원이동 금지", SettingsManager.PREVENT_PORTAL_WITH_EGG);
+        sendBooleanSetting(player, "알 우클릭으로 획득", SettingsManager.EGG_ACQUISITION_BY_CLICK_ENABLED);
         player.sendMessage("§e===================================");
         sendBackButton(player); // 뒤로가기 버튼 추가
     }

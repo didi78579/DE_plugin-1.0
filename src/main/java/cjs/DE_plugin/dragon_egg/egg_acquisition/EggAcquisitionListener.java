@@ -1,5 +1,7 @@
 package cjs.DE_plugin.dragon_egg.egg_acquisition;
 
+import cjs.DE_plugin.DE_plugin;
+import cjs.DE_plugin.settings.SettingsManager;
 import cjs.DE_plugin.dragon_egg.egg_death_event.AltarManager;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -16,8 +18,18 @@ import org.bukkit.inventory.PlayerInventory;
 
 public class EggAcquisitionListener implements Listener {
 
+    private final SettingsManager sm;
+
+    public EggAcquisitionListener(DE_plugin plugin) {
+        this.sm = plugin.getSettingsManager();
+    }
+
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
+        // 설정에서 비활성화된 경우, 아무것도 하지 않음
+        if (!sm.getBoolean(SettingsManager.EGG_ACQUISITION_BY_CLICK_ENABLED)) {
+            return;
+        }
         // 이벤트가 블록 우클릭이 아니면 무시
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
             return;

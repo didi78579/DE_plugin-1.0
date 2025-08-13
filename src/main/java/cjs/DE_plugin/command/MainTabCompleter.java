@@ -17,7 +17,7 @@ public class MainTabCompleter implements TabCompleter {
 
     private final SettingsManager sm;
     private final List<String> mainSubCommands = Arrays.asList("settings", "set", "start", "stop", "status", "border");
-    private final List<String> settingsCategories = Arrays.asList("general", "border", "enchant");
+    private final List<String> settingsCategories = Arrays.asList("general", "border", "enchant", "dragon");
     private final List<String> borderSubCommands = Arrays.asList("setcenter");
 
     public MainTabCompleter(SettingsManager settingsManager) {

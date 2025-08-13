@@ -24,7 +24,6 @@ public class MainCommand implements CommandExecutor {
             SettingsManager.VILLAGER_TRADE_LIMIT,
             SettingsManager.POTION_LIMIT,
             SettingsManager.RESPAWNED_DRAGON_EXP_LEVEL,
-            SettingsManager.EGG_FOOTPRINT_DURATION_DAYS,
             SettingsManager.GAME_PLAY_TIME_DAYS,
             SettingsManager.EXPLOSION_DAMAGE_MULTIPLIER,
             SettingsManager.PLAYER_EXP_DROP_MULTIPLIER,
@@ -35,7 +34,6 @@ public class MainCommand implements CommandExecutor {
             SettingsManager.HIDE_ADVANCEMENTS,
             SettingsManager.HIDE_COORDINATES,
             SettingsManager.HIDE_FOOTPRINTS_AT_NIGHT,
-            SettingsManager.PREVENT_PORTAL_WITH_EGG,
             SettingsManager.CHAT_BANNED,
             SettingsManager.KILL_LOG_DISABLED,
             SettingsManager.GOLDEN_APPLE_REGEN_DURATION_SECONDS,
@@ -54,6 +52,13 @@ public class MainCommand implements CommandExecutor {
             SettingsManager.ENCHANT_OVER_LIMIT_COST,
             SettingsManager.ENCHANT_BOW_INFINITY_DISABLED,
             SettingsManager.ENCHANT_ARMOR_MENDING_DISABLED
+    );
+
+    // [신규] 드래곤 알 관련 설정 카테고리
+    private static final List<String> DRAGON_EGG_SETTINGS_KEYS = Arrays.asList(
+            SettingsManager.EGG_FOOTPRINT_DURATION_DAYS,
+            SettingsManager.PREVENT_PORTAL_WITH_EGG,
+            SettingsManager.EGG_ACQUISITION_BY_CLICK_ENABLED
     );
 
 
@@ -135,13 +140,16 @@ public class MainCommand implements CommandExecutor {
                 case "enchant":
                     settingsEditorUI.openEnchantSettings(player);
                     break;
+                case "dragon":
+                    settingsEditorUI.openDragonEggSettings(player);
+                    break;
                 default:
-                    player.sendMessage("§c알 수 없는 설정 카테고리입니다. [general, border, enchant]");
+                    player.sendMessage("§c알 수 없는 설정 카테고리입니다. [general, border, enchant, dragon]");
                     settingsEditorUI.open(player); // 메뉴 다시 보여주기
                     break;
             }
         } else {
-            player.sendMessage("§c사용법: /de settings [general|border|enchant]");
+            player.sendMessage("§c사용법: /de settings [general|border|enchant|dragon]");
         }
     }
 
@@ -209,6 +217,8 @@ public class MainCommand implements CommandExecutor {
                 settingsEditorUI.openBorderSettings(player);
             } else if (ENCHANT_SETTINGS_KEYS.contains(key)) {
                 settingsEditorUI.openEnchantSettings(player);
+            } else if (DRAGON_EGG_SETTINGS_KEYS.contains(key)) {
+                settingsEditorUI.openDragonEggSettings(player);
             } else {
                 // 분류되지 않은 키의 경우, 메인 메뉴로 돌아갑니다.
                 settingsEditorUI.open(player);

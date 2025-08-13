@@ -69,20 +69,22 @@ public class FootprintTask extends BukkitRunnable {
         World mainWorld = Bukkit.getWorlds().get(0);
         boolean isDay = mainWorld.getTime() >= 0 && mainWorld.getTime() < 13000;
 
-        // [복원] 시간 기반 만료 로직
-        long durationDays = sm.getInt(SettingsManager.EGG_FOOTPRINT_DURATION_DAYS);
-        // 마인크래프트 하루는 20분입니다. (20분 * 60초 * 1000밀리초)
-        long durationMs = durationDays * 20 * 60 * 1000;
+        // [최적화] 전체 발자국 대신, 온라인 플레이어 주변의 발자국만 업데이트합니다.
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            World world = player.getWorld();
+            // 서버 뷰 거리를 가져와서 업데이트 범위를 정합니다.
+            int viewDistance = Bukkit.getServer().getViewDistance();
+            Chunk playerChunk = player.getChunk();
 
-        // Concurrent-safe 컬렉션(예: CopyOnWriteArraySet)을 사용하면 반복 중 수정이 안전합니다.
-        for (Footprint fp : footprintManager.getAllFootprints()) {
-            if (System.currentTimeMillis() - fp.getCreationTime() > durationMs) {
-                // FootprintManager를 통해 발자국을 제거합니다.
-                // 이 방식은 Manager가 내부 컬렉션과 파일 저장을 모두 처리한다고 가정합니다.
-                footprintManager.removeFootprint(fp);
-            } else {
-                // 만료되지 않은 발자국의 가시성을 업데이트합니다.
-                toggleVisibility(fp, isDay);
+            for (int x = -viewDistance; x <= viewDistance; x++) {
+                for (int z = -viewDistance; z <= viewDistance; z++) {
+                    // 플레이어 주변 청크가 로드되어 있는지 확인하고 발자국을 가져옵니다.
+                    if (world.isChunkLoaded(playerChunk.getX() + x, playerChunk.getZ() + z)) {
+                        Chunk chunk = world.getChunkAt(playerChunk.getX() + x, playerChunk.getZ() + z);
+                        footprintManager.getFootprintsInChunk(chunk)
+                                .forEach(fp -> toggleVisibility(fp, isDay));
+                    }
+                }
             }
         }
     }
